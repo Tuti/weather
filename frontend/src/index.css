@@ -1,0 +1,43 @@
+
+html, body, #root {
+    height: 100%;
+    margin: 0;
+
+}
+
+#root {
+    background-color: #e0e0e0;
+}
+
+.app {
+    display: grid;
+    grid-template-rows: 1fr 2fr 1fr;
+}
+
+.weather {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.search {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2196f3;
+    padding: 24px;
+}
+
+.currentWeather {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border: solid;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.col3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
