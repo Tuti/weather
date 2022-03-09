@@ -9,20 +9,19 @@ const default_CountryCode = 'US';
 function App() {
     
     /* Hooks */
-    const [searchInput, setSearchInput] = useState('');
     const [loading, setLoading] = useState(true);
+    const [searchInput, setSearchInput] = useState('');
     const [weatherData, setWeatherData] = useState('');
-
     const fetchData = useCallback(async () => {
-          const json = await fetchWeatherData('Los Angeles, CA' );
+          const json = await fetchWeatherData('Los Angeles, CA');
           setWeatherData(json);  
+          setLoading(false);
     }, [])
 
     //runs on intial render
     useEffect(() => {
         fetchData()
         .catch(console.error);
-        setLoading(false);
     }, [fetchData]);
 
     if(loading) {
@@ -41,7 +40,7 @@ function App() {
     );
 }
 
-function Weather({weatherData}) {
+function Weather({weatherData, setCity}) {
     return(
         <div className='weather'>
             <CurrentWeather weatherData={weatherData}/>
@@ -53,15 +52,15 @@ function CurrentWeather({weatherData}) {
     return (
         <div className='currentWeather'>
             <div className='col1'>
-                {/* <p>{JSON.stringify(weatherData.current?)}</p> */}
-                <p>{JSON.stringify(weatherData.current?.temp)}° F</p>
-                
+                <p>{weatherData.cityName}, {weatherData.stateCode}</p>
+                <p>{weatherData.current?.temp}° F</p>
+                <p>{weatherData.current?.weather[0].main}</p>
             </div>
             <div className='col2'>
                 
             </div> 
             <div className='col3'>
-                <img src={weatherIcons[0]} alt='sun alt placeholder'/>
+                <img src={determineWeatherIcon({weatherData})} alt='sun alt placeholder'/>
             </div>
         </div>
     );
@@ -109,10 +108,12 @@ function footer() {
 async function fetchWeatherData(searchInput) {
     
     let split = searchInput.split(",");
+    let cityName = split[0];
     split = split.map(entry => entry.trim());
  
     const data = {
-        cityName : split[0],
+        cityName : cityName,
+        cityNameTrimmed : split[0],
         stateCode : split[1],
         countryCode : default_CountryCode,
     }
@@ -125,11 +126,39 @@ async function fetchWeatherData(searchInput) {
             },
             body: JSON.stringify(data)
         });
+        if(!response.ok) {
+            throw new Error('fetch request failed!');
+        }
         const json = await response.json();
+        
         return json;  
     } catch (error) {
         console.log(error);
     }                   
+}
+
+function determineWeatherIcon({weatherData}) {
+    const description = weatherData.current?.weather[0].main;
+    if(!description) {
+        return null;
+    }
+
+    if(description.includes('Clear')) {
+        return weatherIcons[1];
+    }
+    if(description.includes('Clouds')) {
+        return weatherIcons[2]
+    }
+    if(description.includes('Rain')) {
+        return weatherIcons[3];
+    }
+    if(description.includes('ThunderStorm')) {
+        return weatherIcons[4];
+    }
+    if(description.includes('Snow')) {
+        return weatherIcons[5];
+    }
+    return weatherIcons[0]; //change to question mark icon
 }
 
 //=======================================

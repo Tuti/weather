@@ -34,6 +34,8 @@ html, body, #root {
     border: solid;
     border-radius: 10px;
     padding: 10px;
+    margin: 10px;
+    width: clamp(300px, 40%, 600px);
 }
 
 .col3 {

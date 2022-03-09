@@ -5,8 +5,10 @@ const rateLimit = require('express-rate-limit');
 const config = require('../config.json');
 
 const app = express();
-const port = 3001;
+const port = 3010;
 const openWeatherAPI_key = config['openWeatherAPI-key'];
+
+let weather_counter = 0;
 
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 60 seconds * 1000 miliseconds = 1 minute
@@ -25,14 +27,22 @@ app.get('/', (req, res) => {
 })
 
 app.post('/weather', cors(), async(req, res, next) => {
-    const cityName = req.body.cityName;
+    const cityName = req.body.cityNameTrimmed;
     const stateCode = req.body.stateCode;
     const countryCode = 'US';
     const limit = 1;
 
     const geoCords = await getGeoCords(cityName, stateCode, countryCode, limit);
     const weatherData = await getWeatherData(geoCords.lat, geoCords.lon);
+
+    
+    weatherData.cityName = req.body.cityName;
+    weatherData.stateCode = req.body.stateCode;
     res.json(weatherData);
+    weather_counter = weather_counter + 1;
+    let date = new Date();
+    let time = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
+    console.log(`[${weather_counter}] Sent weather data! [${time}]`);
 })
 
 app.listen(port, () => {
@@ -43,7 +53,7 @@ app.listen(port, () => {
 /* Helper Functions */
 async function getGeoCords(cityName, stateCode, countryCode, limit) {
     try {
-        const response = await axios.get(`http://api.openweathermap.org/geo/1.0/direct?q=${cityName},${stateCode},${countryCode}&limit=${limit}&appid=${openWeatherAPI_key}`)
+        const response = await axios.get(`http://api.openweathermap.org/geo/1.0/direct?q=${cityName},${stateCode},${countryCode}&limit=${limit}&appid=${openWeatherAPI_key}`)        
         return response.data[0];
     } catch(error) {
         console.error(error);
