@@ -1,168 +1,137 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import './index.css'
-import weatherIcons from './imports';
+import './index.css';
 
-const default_CountryCode = 'US';
-
-/* Function Components */
 function App() {
-    
-    /* Hooks */
-    const [loading, setLoading] = useState(true);
-    const [searchInput, setSearchInput] = useState('');
-    const [weatherData, setWeatherData] = useState('');
-    const fetchData = useCallback(async () => {
-          const json = await fetchWeatherData('Los Angeles, CA');
-          setWeatherData(json);  
-          setLoading(false);
-    }, [])
+  const [intialLoad, setInitalLoad] = useState(true);
+  const [search, setSearch] = useState('');
+  const [weatherResponse, setWeatherResponse] = useState('');
+  const [status, setStatus] = useState('Enter a location!');
+  const [location, setLocation] = useState('To find the weather');
+  const [wind, setWind] = useState('TBD');
+  const [temperature, setTemperature] = useState('TBD');
+  const [humidity, setHumidity] = useState('TBD');
+  const [weatherIcon, setweatherIcon] = useState('http://openweathermap.org/img/wn/01d@2x.png');
 
-    //runs on intial render
-    useEffect(() => {
+  const fetchData = useCallback(async () => {
+    const response = await fetchWeather(search);
+    setWeatherResponse(response);
+    setInitalLoad(false);
+  }, [search]);
+
+  useEffect(() => {
+    const listener = event => {
+      if (event.code === "Enter" || event.code === "NumpadEnter") {
         fetchData()
-        .catch(console.error);
-    }, [fetchData]);
+        .catch(e => console.error(e));
+      }
+    };
+    document.addEventListener("keydown", listener);
+    return () => {
+      document.removeEventListener("keydown", listener);
+    };
+  }, [fetchData]);
 
-    if(loading) {
-        return null;
-    }
-    
-    return (
-        <div className='app'>
-            <Search 
-                search={searchInput} 
-                setSearch={setSearchInput} 
-                setWeatherData={setWeatherData}
-            />
-            <Weather weatherData={weatherData}/>
+  useEffect(() => {
+    if(intialLoad) return;
+    setStatus(weatherResponse.current?.weather[0].main);
+    setLocation(weatherResponse.cityName + ', ' + weatherResponse.stateCode);
+    setWind(weatherResponse.current?.wind_speed + ' MPH');
+    setTemperature(weatherResponse.current?.temp + ' F°');
+    setHumidity(weatherResponse.current?.humidity + '%');
+    setweatherIcon(`http://openweathermap.org/img/wn/${weatherResponse.current?.weather[0].icon}@2x.png`);
+  }, [intialLoad, weatherResponse]);
+
+  function handleChange(event) {
+    setSearch(event.target.value);
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+  }
+
+  return(
+    <div className='container'>
+      <div className='weather'>
+        <div className='header'>
+          <div className='weatherIcon'>
+            <img src={weatherIcon} alt='weather icon'></img>
+          </div>
         </div>
-    );
-}
-
-function Weather({weatherData, setCity}) {
-    return(
-        <div className='weather'>
-            <CurrentWeather weatherData={weatherData}/>
-        </div>
-    );
-}
-
-function CurrentWeather({weatherData}) {
-    return (
-        <div className='currentWeather'>
-            <div className='col1'>
-                <p>{weatherData.cityName}, {weatherData.stateCode}</p>
-                <p>{weatherData.current?.temp}° F</p>
-                <p>{weatherData.current?.weather[0].main}</p>
+        <div className='information'> 
+          <div className='subcontainer'>
+            <div className='general-info'>
+              <div className='status'>{status}</div>
+              <div className='location'>{location}</div>
             </div>
-            <div className='col2'>
-                
-            </div> 
-            <div className='col3'>
-                <img src={determineWeatherIcon({weatherData})} alt='sun alt placeholder'/>
+            <div className='weather-info'>
+              <div className='wind'>
+                <p className='subheading'>Wind:</p>
+                <p>{wind}</p>
+              </div>
+              <div className='temperature'>
+                <p className='subheading'>Temperature: </p>
+                <p>{temperature}</p>
+              </div>
+              <div className='humidity'>
+                <p className='subheading'>Humidity: </p>
+                <p>{humidity}</p>
+              </div>
             </div>
-        </div>
-    );
-}
-
-function Search({search, setSearch, setWeatherData}) {
-    function handleSearchChange(event) {
-        setSearch(event.target.value);
-    }
-    
-    function handleSubmit(event) {
-        event.preventDefault();
-        fetchWeatherData(search)
-        .then(json => setWeatherData(json))
-        .catch(error => console.log(error));
-    }
-
-    return (
-        <div className='search'>
-            <form onSubmit={handleSubmit}>
+            <div className='search-box'>
+              <form onSubmit={handleSubmit}>
                 <input 
-                    type='text' 
-                    value={search} 
-                    onChange={handleSearchChange} 
-                    name='searchBar' 
-                    placeholder='City Name, State Code'>
-                </input>
-                <button type='submit' className='searchButton'>
-                    Search
-                </button>
-            </form>
+                  type='text'
+                  onChange={handleChange}
+                  name='searchBar'
+                  placeholder='City, State Code'
+                />
+              </form>
+            </div>
+          </div> 
         </div>
-    );   
-}
-
-function footer() {
-    return (
-        <div>
-            <h1>Tuti</h1>
-        </div>
-    );
-}
-
-/* Functions */
-async function fetchWeatherData(searchInput) {
+      </div>
+      <div className='footer'>
+        <a href='https://openweathermap.org/api'>Powered by OpenWeather api</a>
+      </div>
+    </div>
     
-    let split = searchInput.split(",");
-    let cityName = split[0];
-    split = split.map(entry => entry.trim());
- 
-    const data = {
-        cityName : cityName,
-        cityNameTrimmed : split[0],
-        stateCode : split[1],
-        countryCode : default_CountryCode,
-    }
-
-    try {
-        const response = await fetch('http://localhost:3001/weather', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
-        if(!response.ok) {
-            throw new Error('fetch request failed!');
-        }
-        const json = await response.json();
-        
-        return json;  
-    } catch (error) {
-        console.log(error);
-    }                   
+  );
 }
 
-function determineWeatherIcon({weatherData}) {
-    const description = weatherData.current?.weather[0].main;
-    if(!description) {
-        return null;
-    }
+async function fetchWeather(search) {
+    
+  let split = search.split(",");
+  let cityName = split[0];
+  split = split.map(entry => entry.trim());
 
-    if(description.includes('Clear')) {
-        return weatherIcons[1];
-    }
-    if(description.includes('Clouds')) {
-        return weatherIcons[2]
-    }
-    if(description.includes('Rain')) {
-        return weatherIcons[3];
-    }
-    if(description.includes('ThunderStorm')) {
-        return weatherIcons[4];
-    }
-    if(description.includes('Snow')) {
-        return weatherIcons[5];
-    }
-    return weatherIcons[0]; //change to question mark icon
+  const data = {
+      cityName : cityName,
+      cityNameTrimmed : split[0],
+      stateCode : split[1],
+  }
+
+  try {
+      const response = await fetch('http://localhost:3002/weather', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
+      });
+      if(!response.ok) {
+          throw new Error('fetch request failed!');
+      }
+      const json = await response.json();
+      console.log('fetch successful!');
+
+      return json;  
+  } catch (error) {
+      console.log(error);
+  }                   
 }
 
-//=======================================
 ReactDOM.render(
-    <App />,
-    document.getElementById('root')
+  <App />,
+  document.getElementById('root')
 );

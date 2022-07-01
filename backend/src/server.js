@@ -3,16 +3,15 @@ const axios = require('axios');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const config = require('../config.json');
-
 const app = express();
-const port = 3010;
+const port = 3002;
 const openWeatherAPI_key = config['openWeatherAPI-key'];
 
 let weather_counter = 0;
 
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 60 seconds * 1000 miliseconds = 1 minute
-    max: 20,
+    max: 10,
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -21,28 +20,31 @@ app.use(express.json());
 app.use(cors());
 app.use(limiter);
 
-
 app.get('/', (req, res) => {
    res.send('Hello World!');
 })
 
 app.post('/weather', cors(), async(req, res, next) => {
+
     const cityName = req.body.cityNameTrimmed;
     const stateCode = req.body.stateCode;
     const countryCode = 'US';
     const limit = 1;
 
-    const geoCords = await getGeoCords(cityName, stateCode, countryCode, limit);
-    const weatherData = await getWeatherData(geoCords.lat, geoCords.lon);
-
+    try {
+        const geoCords = await getGeoCords(cityName, stateCode, countryCode, limit);
+        const weatherData = await getWeatherData(geoCords.lat, geoCords.lon);
+        weatherData.cityName = req.body.cityName;
+        weatherData.stateCode = req.body.stateCode;
+        res.json(weatherData);
+    } catch (e) {
+        console.error(e);
+    }    
     
-    weatherData.cityName = req.body.cityName;
-    weatherData.stateCode = req.body.stateCode;
-    res.json(weatherData);
     weather_counter = weather_counter + 1;
     let date = new Date();
     let time = date.getHours() + ':' + date.getMinutes() + ':' + date.getSeconds();
-    console.log(`[${weather_counter}] Sent weather data! [${time}]`);
+    console.log(`[${weather_counter}] post /weather successful [${time}]`);
 })
 
 app.listen(port, () => {
