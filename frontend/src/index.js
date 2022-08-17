@@ -112,7 +112,7 @@ async function fetchWeather(search) {
   }
 
   try {
-      const response = await fetch('http://localhost:3002/weather', {
+      const response = await fetch('https://weather.josehuerta.codes/api/weather-data', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
