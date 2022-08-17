@@ -6,7 +6,7 @@ const config = require('../config.json');
 const app = express();
 const helmet = require('helmet');
 const compression = require('compression');
-const port = 3002;
+const port = config['port'];
 const openWeatherAPI_key = config['openWeatherAPI-key'];
 let weather_counter = 0;
 
