@@ -3,7 +3,6 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
-const config = require('../config.json');
 const app = express();
 const helmet = require('helmet');
 const compression = require('compression');
@@ -17,6 +16,13 @@ const limiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
+
+try {
+    const config = require('../config.json');
+} catch (e) {
+    console.error('config failed: \n' + e);
+}
+
 
 app.use(express.json());
 app.use(cors());
